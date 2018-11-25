@@ -1,7 +1,7 @@
 #!/bin/python3
 #
 # Description: Script that takes in command line arguments to search a url for a given string
-# Authors: Kyle Hart, Sayera Dhaubadel
+# Authors: Kyle Hart, Sayera Dhaubhadel
 
 from urllib.request import urlopen
 from urllib.error import HTTPError
@@ -9,6 +9,7 @@ from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup, SoupStrainer
 import re
 import sys
+import socket
 
 
 visited_sites = []
@@ -52,6 +53,36 @@ def count_strings(regex, page, recursive=False):
 
     return count + results
 
+
+def http_get(url):
+    regex = r"^(?:(?:http[s]?|ftp):\/)?\/?([^:\/\s]+)((?:(?:\/\w+)*\/)(?:[\w\-\.]+[^#?\s]+)(?:.*)?(?:#[\w\-]+)?)$"
+    url_split = re.findall(regex, url)
+    host = url_split[0]
+    path = url_split[1]
+    request_query = b"GET {} HTTP/1.1\r\nHost:{}\r\nUser-Agent: \r\nAccept:*/*\r\n\r\n".format(host, path)
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    host_ip = socket.gethostbyname(url)
+    port = 80
+    BUFFER_LENGTH = 400
+    data = b''
+
+    s.connect((host_ip, port))
+    s.send(request_query)
+
+    while (True):
+        packet = s.recv(BUFFER_LENGTH)
+        data += packet
+        print(1)
+        if len(packet) < BUFFER_LENGTH:
+            break
+    print(data)
+    header, data = data.split(b'\r\n\r\n', 2)
+    print('header :', header)
+    print('data :', data)
+    header_split = header.split(b'\r\n')
+    print('header split: ', len(header_split), header_split)
 
 if __name__ == "__main__":
 
