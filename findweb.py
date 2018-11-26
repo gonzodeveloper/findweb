@@ -7,55 +7,57 @@ from urllib.request import urlopen
 from urllib.error import HTTPError
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup, SoupStrainer
+from pathlib import Path
 import re
 import sys
-import socket
 
 
 visited_sites = []
 
 
-def validate_url(url):
-    parsed = urlparse(url)
+def validate_url(url, parent):
+    parsed_url = urlparse(url)
+    parsed_parent = urlparse(parent)
 
-    if parsed.scheme not in ['http', ''] or url in visited_sites:
+    child_path  = Path(parsed_url.path)
+    parent_path = Path(parsed_parent.path)
+
+    if parsed_url.scheme not in ['http', ''] \
+            or url in visited_sites \
+            or parent_path not in child_path.parents:
         return False
-    elif url in visited_sites:
-         return False
     else:
         visited_sites.append(url)
         return True
 
 
-def count_strings(regex, page, recursive=False):
-    if validate_url(page) is False:
+def count_strings(regex, page_url, recursive=False, depth=0):
+
+    try:
+        response = urlopen(page_url).read()
+    except (ValueError, HTTPError) as e:
+        print(e, page_url)
         return 0
-    # try:
-    #     response = urlopen(page).read()
-    # except (ValueError, HTTPError) as e:
-    #     print(e, page)
-    #     return 0
 
-    header, response = http_get(page)
+    # header, response = http_get(page)
 
-    # results = re.findall(regex, str(response), re.IGNORECASE)
-    results = re.findall(regex, response, re.IGNORECASE)
+    results = re.findall(regex, str(response))
+
     count = 0
     results = 0 if results is None else len(results)
+    print("\t" * depth, page_url, " : \t", results)
 
-    # print(url)
     if recursive:
         soup = BeautifulSoup(response, parse_only=SoupStrainer('a'), features="html.parser")
         for link in soup:
-            print(link)
             if link.has_attr('href'):
-                new_link = urljoin(page, link['href'])
-                print(new_link)
-                count += count_strings(regex, new_link, recursive)
+                new_link = urljoin(page_url, link['href'])
+                if validate_url(new_link, page_url):
+                    count += count_strings(regex, new_link, recursive, depth + 1)
             if link.has_attr('src'):
-                print(new_link)
-                new_link = urljoin(page, link['src'])
-                count += count_strings(regex, new_link, recursive)
+                new_link = urljoin(page_url, link['src'])
+                if validate_url(new_link, page):
+                    count += count_strings(regex, new_link, recursive, depth + 1)
 
     return count + results
 
@@ -77,8 +79,7 @@ if __name__ == "__main__":
         url = sys.argv[1]
         string = sys.argv[2]
 
-    # regex = re.compile(string)
-    regex = string.encode()     #I figured regex isn't necessary, byte string is enough
-    count = count_strings(regex, page=url, recursive=recursive)
+    regex = re.compile(string)
+    count = count_strings(regex, page_url=url, recursive=recursive)
     print()
-    print(count)
+    print("Total hits: ", count)
