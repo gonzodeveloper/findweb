@@ -1,3 +1,7 @@
+import sys
+import socket
+
+
 def http_get(url):
     regex = r"^(?:(?:http[s]?|ftp):\/)?\/?([^:\/\s]+)((?:(?:\/\w+)*\/)(?:[\w\-\.]+[^#?\s]+)?(?:.*)?(?:#[\w\-]+)?)?$"
     # regex = r"^(?:(?:http[s]?|ftp):\/)?\/?(?:[^:\/\s]+)(?:(?:(?:\/\w+)*\/)(?:[\w\-\.]+[^#?\s]+)?(?:.*)?(?:#[\w\-]+)?)?$"
@@ -46,3 +50,10 @@ def http_get(url):
                 print("Content type isn't what is desired")
                 exit()
     return header, data
+
+
+if __name__ == "__main__":
+    url = sys.argv[1]
+    page = http_get(url)
+
+    print(page)
