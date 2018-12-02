@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import sys
 
+from http_get import http_get
 
 visited_sites = []
 
@@ -24,7 +25,8 @@ def validate_url(url, parent):
 
     if parsed_url.scheme not in ['http', ''] \
             or url in visited_sites \
-            or parent_path not in child_path.parents:
+            or parent_path not in child_path.parents\
+            or parsed_url.netloc != parsed_parent.netloc:
         return False
     else:
         visited_sites.append(url)
@@ -34,9 +36,9 @@ def validate_url(url, parent):
 def count_strings(regex, page_url, recursive=False, depth=0):
 
     try:
-        response = urlopen(page_url).read()
+        response = http_get(page_url)
+        #response = urlopen(page_url).read()
     except (ValueError, HTTPError) as e:
-        print(e, page_url)
         return 0
 
     # header, response = http_get(page)

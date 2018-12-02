@@ -1,26 +1,35 @@
+#!/bin/python3
+
 import sys
 import socket
+import re
+from urllib.parse import urlparse
 
 
 def http_get(url):
-    regex = r"^(?:(?:http[s]?|ftp):\/)?\/?([^:\/\s]+)((?:(?:\/\w+)*\/)(?:[\w\-\.]+[^#?\s]+)?(?:.*)?(?:#[\w\-]+)?)?$"
-    # regex = r"^(?:(?:http[s]?|ftp):\/)?\/?(?:[^:\/\s]+)(?:(?:(?:\/\w+)*\/)(?:[\w\-\.]+[^#?\s]+)?(?:.*)?(?:#[\w\-]+)?)?$"
+    # regex = r"^(?:(?:http[s]?|ftp):\/)?\/?([^:\/\s]+)((?:(?:\/\w+)*\/)(?:[\w\-\.]+[^#?\s]+)?(?:.*)?(?:#[\w\-]+)?)?$"
+    # # regex = r"^(?:(?:http[s]?|ftp):\/)?\/?(?:[^:\/\s]+)(?:(?:(?:\/\w+)*\/)(?:[\w\-\.]+[^#?\s]+)?(?:.*)?(?:#[\w\-]+)?)?$"
+    #
+    # url_split = re.findall(regex, url, re.IGNORECASE)
+    # print("url split ", url_split)
+    # url_split = list(url_split[0])
 
-    url_split = re.findall(regex, url, re.IGNORECASE)
-    print("url split ", url_split)
-    url_split = list(url_split[0])
+    # if(url_split[1] == ""):
+    #     url_split[1] = "/"
+    # host = url_split[0]
+    # path = url_split[1]
 
-    if(url_split[1] == ""):
-        url_split[1] = "/"
-    host = url_split[0]
-    path = url_split[1]
+    parsed_url = urlparse(url)
+    host = parsed_url.netloc
+    path = parsed_url.path
+
     request_query = "GET {} HTTP/1.1\r\nHost:{}\r\nUser-Agent: \r\nAccept:*/*\r\n\r\n".format(path, host).encode()
     print(request_query)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(3)
 
     port = 80
-    BUFFER_LENGTH = 400
+    BUFFER_LENGTH = 512
     data = b''
 
     s.connect((host, port))
@@ -36,10 +45,10 @@ def http_get(url):
             break
 
     header, data = data.split(b'\r\n\r\n', maxsplit=1)
-    print('header :', header)
-    print('data :', data)
+    #print('header :', header)
+    #print('data :', data)
     header_split = header.split(b'\r\n')
-    print('header split: ', len(header_split), header_split)
+    #print('header split: ', len(header_split), header_split)
 
     for hdr in header_split:
         if hdr.startswith(b"Content-Type:"):
@@ -49,11 +58,11 @@ def http_get(url):
             else:
                 print("Content type isn't what is desired")
                 exit()
-    return header, data
+    return data
 
 
 if __name__ == "__main__":
     url = sys.argv[1]
     page = http_get(url)
 
-    print(page)
+    print(type(page))
